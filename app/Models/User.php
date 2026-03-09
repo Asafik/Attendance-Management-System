@@ -3,7 +3,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -23,6 +22,18 @@ class User extends Authenticatable
         'password',
         'role_id',
         'is_active',
+        // Field session (1 akun 1 device)
+        'session_id',
+        'last_login_at',
+        'last_ip',
+        'last_user_agent',
+        // ===== TAMBAHAN UNTUK LOKASI =====
+        'location_permission', // 'not_set', 'allowed', 'blocked'
+        'last_latitude',
+        'last_longitude',
+        'last_accuracy',
+        'last_location_at',
+        // =================================
     ];
 
     /**
@@ -36,18 +47,21 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_active' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'last_login_at' => 'datetime',
+        'is_active' => 'boolean',
+        // ===== TAMBAHAN UNTUK LOKASI =====
+        'last_latitude' => 'decimal:8',
+        'last_longitude' => 'decimal:8',
+        'last_accuracy' => 'integer',
+        'last_location_at' => 'datetime',
+        // =================================
+    ];
 
     /**
      * Relasi ke Role
@@ -58,7 +72,15 @@ class User extends Authenticatable
     }
 
     /**
-     * Helper untuk cek role
+     * Relasi ke Activity Logs
+     */
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
+    /**
+     * Cek apakah user memiliki role tertentu
      */
     public function hasRole($roleName)
     {
@@ -66,10 +88,99 @@ class User extends Authenticatable
     }
 
     /**
-     * Helper untuk cek apakah user aktif
+     * Cek apakah user aktif
      */
     public function isActive()
     {
-        return $this->is_active;
+        return $this->is_active === true;
+    }
+
+    /**
+     * Update session info saat login
+     */
+    public function updateSessionInfo($request)
+    {
+        $this->update([
+            'session_id' => session()->getId(),
+            'last_login_at' => now(),
+            'last_ip' => $request->ip(),
+            'last_user_agent' => $request->userAgent(),
+        ]);
+    }
+
+    /**
+     * Cek apakah ini session terbaru
+     */
+    public function isCurrentSession()
+    {
+        return $this->session_id === session()->getId();
+    }
+
+    // ===== METHOD BARU UNTUK LOKASI =====
+
+    /**
+     * Cek apakah user sudah pernah memberikan izin lokasi
+     */
+    public function hasLocationPermission()
+    {
+        return $this->location_permission === 'allowed';
+    }
+
+    /**
+     * Cek apakah user pernah menolak izin lokasi
+     */
+    public function hasBlockedLocation()
+    {
+        return $this->location_permission === 'blocked';
+    }
+
+    /**
+     * Update status izin lokasi
+     */
+    public function updateLocationPermission($status)
+    {
+        $this->update(['location_permission' => $status]);
+    }
+
+    /**
+     * Update lokasi terakhir user
+     */
+    public function updateLastLocation($latitude, $longitude, $accuracy = null)
+    {
+        $this->update([
+            'last_latitude' => $latitude,
+            'last_longitude' => $longitude,
+            'last_accuracy' => $accuracy,
+            'last_location_at' => now(),
+        ]);
+    }
+
+    /**
+     * Dapatkan lokasi terakhir dalam format array
+     */
+    public function getLastLocationAttribute()
+    {
+        if (!$this->last_latitude || !$this->last_longitude) {
+            return null;
+        }
+
+        return [
+            'latitude' => $this->last_latitude,
+            'longitude' => $this->last_longitude,
+            'accuracy' => $this->last_accuracy,
+            'time' => $this->last_location_at,
+        ];
+    }
+
+    /**
+     * Dapatkan status izin dalam format teks yang user-friendly
+     */
+    public function getLocationPermissionTextAttribute()
+    {
+        return match($this->location_permission) {
+            'allowed' => 'Mengizinkan',
+            'blocked' => 'Menolak',
+            default => 'Belum Ditentukan',
+        };
     }
 }

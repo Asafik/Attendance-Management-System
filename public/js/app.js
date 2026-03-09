@@ -1,21 +1,23 @@
 $(document).ready(function() {
-    // ===== DARK MODE DEFAULT (TAMBAHKAN INI PALING ATAS) =====
+    // ===== DARK MODE DEFAULT (sesuai CSS terbaru) =====
     const savedMode = localStorage.getItem('darkMode');
 
     if (savedMode === 'enabled') {
-        $('body').addClass('dark-mode');
+        // User memilih dark mode
+        $('body').removeClass('light-mode');
         $('#darkModeToggle i').removeClass('fa-moon').addClass('fa-sun');
     } else if (savedMode === 'disabled') {
-        $('body').removeClass('dark-mode');
+        // User memilih light mode
+        $('body').addClass('light-mode');
         $('#darkModeToggle i').removeClass('fa-sun').addClass('fa-moon');
     } else {
         // DEFAULT DARK MODE
-        $('body').addClass('dark-mode');
+        $('body').removeClass('light-mode');
         $('#darkModeToggle i').removeClass('fa-moon').addClass('fa-sun');
         localStorage.setItem('darkMode', 'enabled');
     }
 
-    // Sidebar toggle
+    // ===== SIDEBAR TOGGLE =====
     $('#toggleSidebar').click(function() {
         if ($(window).width() <= 992) {
             $('#sidebar').toggleClass('active');
@@ -31,13 +33,18 @@ $(document).ready(function() {
         $('#sidebarOverlay').removeClass('active');
     });
 
-    // Toggle submenu
+    // ===== SUBMENU TOGGLE =====
     $('.has-submenu > .nav-link').click(function(e) {
         e.preventDefault();
         $(this).parent().toggleClass('open');
     });
 
-    // Toggle user profile dropdown
+    // Keep submenu open if any child is active
+    if ($('.submenu-link.active').length > 0) {
+        $('.nav-item.has-submenu').addClass('open');
+    }
+
+    // ===== USER PROFILE DROPDOWN =====
     $('#userProfile').click(function(e) {
         e.stopPropagation();
         $(this).toggleClass('active');
@@ -49,23 +56,27 @@ $(document).ready(function() {
         }
     });
 
-    // Dark mode toggle
+    // ===== DARK MODE TOGGLE =====
     $('#darkModeToggle').click(function() {
-        $('body').toggleClass('dark-mode');
+        $('body').toggleClass('light-mode');
         var icon = $(this).find('i');
 
-        if ($('body').hasClass('dark-mode')) {
-            icon.removeClass('fa-moon').addClass('fa-sun');
-            localStorage.setItem('darkMode', 'enabled');
-        } else {
+        if ($('body').hasClass('light-mode')) {
+            // Light mode aktif
             icon.removeClass('fa-sun').addClass('fa-moon');
             localStorage.setItem('darkMode', 'disabled');
+        } else {
+            // Dark mode aktif
+            icon.removeClass('fa-moon').addClass('fa-sun');
+            localStorage.setItem('darkMode', 'enabled');
         }
     });
 
-    // HAPUS BAGIAN INI (karena sudah di atas)
-    // if (localStorage.getItem('darkMode') === 'enabled') {
-    //     $('body').addClass('dark-mode');
-    //     $('#darkModeToggle i').removeClass('fa-moon').addClass('fa-sun');
-    // }
+    // ===== RESIZE HANDLER =====
+    $(window).resize(function() {
+        if ($(window).width() > 992) {
+            $('#sidebar').removeClass('active');
+            $('#sidebarOverlay').removeClass('active');
+        }
+    });
 });

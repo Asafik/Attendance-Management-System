@@ -18,6 +18,8 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\CheckActiveUser;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\LocationController; // ← TAMBAHKAN INI
 
 /*
 |--------------------------------------------------------------------------
@@ -33,10 +35,19 @@ Route::post('/login', [LoginController::class, 'login']);
 
 /*
 |--------------------------------------------------------------------------
-| Protected Routes (Harus Login & User Aktif)
+| Route untuk Error 419 (Session Expired)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', CheckActiveUser::class])->group(function () {
+Route::get('/session-expired', function () {
+    return view('errors.419');
+})->name('error.419');
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes (Harus Login, User Aktif & Single Session)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', CheckActiveUser::class, \App\Http\Middleware\CheckSingleSession::class])->group(function () {
 
     // Logout
     Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
@@ -174,6 +185,23 @@ Route::middleware(['auth', CheckActiveUser::class])->group(function () {
         Route::put('/{user}', [UserController::class, 'update'])->name('update');
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | ActivityLog
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ===== LOCATION API ROUTES (TAMBAHAN) =====
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/save-location-permission', [LocationController::class, 'savePermission'])->name('location.save-permission');
+    Route::post('/update-location', [LocationController::class, 'updateLocation'])->name('location.update');
+    Route::get('/get-location', [LocationController::class, 'getLocation'])->name('location.get');
+    Route::post('/reverse-geocode', [LocationController::class, 'reverseGeocode'])->name('location.reverse-geocode');
 });
 
 /*

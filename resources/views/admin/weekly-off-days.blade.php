@@ -1,6 +1,6 @@
 @extends('layouts.partials.app')
 
-@section('title', 'Atur Libur Mingguan - Wadul Guse')
+@section('title', 'Atur Libur Mingguan - ' . ($company->name ?? '-'))
 @section('page-title', 'Atur Libur Mingguan')
 
 @push('styles')

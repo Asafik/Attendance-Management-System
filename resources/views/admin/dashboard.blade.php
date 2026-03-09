@@ -1,7 +1,7 @@
 @extends('layouts.partials.app')
 
-@section('title', 'Dashboard - Alena Mandiri Group')
-@section('page-title', 'Dashboard Absensi')
+@section('title', 'Dashboard - ' . ($company->name ?? '-'))
+@section('page-title', 'Dashboard')
 
 @push('styles')
 <style>
@@ -48,6 +48,219 @@
     .month-select:focus {
         outline: none;
         border-color: var(--accent-color);
+    }
+
+    /* ===== NOTIFICATION CONTAINER ===== */
+    .notification-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    .notification {
+        background-color: var(--bg-card);
+        border-left: 4px solid;
+        border-radius: 8px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+        max-width: 400px;
+        pointer-events: auto;
+        animation: slideIn 0.3s ease forwards;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .notification.success {
+        border-left-color: #10b981;
+    }
+
+    .notification.success .notification-icon {
+        background-color: #10b981;
+        color: white;
+    }
+
+    .notification.error {
+        border-left-color: #ef4444;
+    }
+
+    .notification.error .notification-icon {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .notification.warning {
+        border-left-color: #f59e0b;
+    }
+
+    .notification.warning .notification-icon {
+        background-color: #f59e0b;
+        color: white;
+    }
+
+    .notification.info {
+        border-left-color: #3b82f6;
+    }
+
+    .notification.info .notification-icon {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .notification-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .notification-content {
+        flex: 1;
+    }
+
+    .notification-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .notification-message {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .notification-close {
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
+
+    .notification-close:hover {
+        background-color: var(--accent-soft);
+        color: var(--accent-color);
+    }
+
+    .notification-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background-color: var(--accent-color);
+        width: 100%;
+        animation: progress 3s linear forwards;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    @keyframes progress {
+        from {
+            width: 100%;
+        }
+        to {
+            width: 0%;
+        }
+    }
+
+    /* ===== LOADING OVERLAY ===== */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 100000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(3px);
+    }
+
+    .loading-overlay.active {
+        display: flex;
+    }
+
+    .loading-spinner {
+        background-color: var(--bg-card);
+        border-radius: 16px;
+        padding: 30px 40px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        animation: zoomIn 0.3s ease;
+    }
+
+    .loading-spinner i {
+        font-size: 50px;
+        color: var(--accent-color);
+        margin-bottom: 15px;
+        display: inline-block;
+        animation: spin 1s linear infinite;
+    }
+
+    .loading-spinner p {
+        color: var(--text-primary);
+        font-size: 16px;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .loading-spinner small {
+        color: var(--text-secondary);
+        font-size: 13px;
+        display: block;
+        margin-top: 5px;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes zoomIn {
+        from {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
     }
 
     /* ===== CARD STATISTIK DENGAN WARNA PEMBEDA ===== */
@@ -407,8 +620,6 @@
     }
 
     /* ===== RESPONSIVE BREAKPOINTS ===== */
-
-    /* Desktop Besar (1400px ke atas) */
     @media (min-width: 1400px) {
         .row-cards {
             display: flex;
@@ -425,7 +636,6 @@
         .stat-value { font-size: 32px; }
     }
 
-    /* Desktop (1200px - 1399px) */
     @media (min-width: 1200px) and (max-width: 1399px) {
         .row-cards {
             display: flex;
@@ -442,7 +652,6 @@
         .stat-value { font-size: 28px; }
     }
 
-    /* Laptop (992px - 1199px) */
     @media (min-width: 992px) and (max-width: 1199px) {
         .row-cards {
             display: flex;
@@ -460,10 +669,8 @@
         .stat-label { font-size: 13px; }
     }
 
-    /* TABLET (768px - 991px) - 3 CARD PER BARIS */
     @media (min-width: 768px) and (max-width: 991px) {
         .content-area { padding: 20px; }
-
         .row-cards {
             display: flex;
             flex-wrap: wrap;
@@ -479,16 +686,13 @@
         .stat-value { font-size: 24px; }
         .stat-label { font-size: 13px; }
         .stat-change { font-size: 12px; }
-
         .chart-container { height: 250px; }
         .chart-title { font-size: 16px; }
-
         .division-stats { padding: 16px; }
         .division-title { font-size: 16px; }
         .division-icon { width: 36px; height: 36px; font-size: 16px; }
         .division-name { font-size: 14px; }
         .division-name span { font-size: 12px; }
-
         .activity-card { padding: 16px; }
         .activity-title { font-size: 16px; }
         .activity-item { padding: 10px; }
@@ -497,23 +701,18 @@
         .activity-meta { gap: 8px; }
     }
 
-    /* MOBILE (576px - 767px) - 2 CARD PER BARIS */
     @media (min-width: 576px) and (max-width: 767px) {
         .content-area { padding: 16px; }
-
         .filter-section {
             flex-direction: column;
             align-items: flex-start;
         }
-
         .month-selector {
             width: 100%;
         }
-
         .month-select {
             width: 100%;
         }
-
         .row-cards {
             display: flex;
             flex-wrap: wrap;
@@ -529,17 +728,14 @@
         .stat-value { font-size: 22px; }
         .stat-label { font-size: 12px; }
         .stat-change { font-size: 11px; }
-
         .chart-card { padding: 16px; }
         .chart-title { font-size: 16px; }
         .chart-container { height: 220px; }
-
         .division-stats { padding: 16px; }
         .division-title { font-size: 16px; }
         .division-icon { width: 36px; height: 36px; font-size: 16px; }
         .division-name { font-size: 14px; }
         .division-name span { font-size: 12px; }
-
         .activity-card { padding: 16px; }
         .activity-title { font-size: 16px; }
         .activity-item { padding: 10px; }
@@ -550,23 +746,18 @@
         .activity-meta { gap: 8px; }
     }
 
-    /* MOBILE KECIL (< 576px) - 2 CARD PER BARIS */
     @media (max-width: 575px) {
         .content-area { padding: 12px; }
-
         .filter-section {
             flex-direction: column;
             align-items: flex-start;
         }
-
         .month-selector {
             width: 100%;
         }
-
         .month-select {
             width: 100%;
         }
-
         .row-cards {
             display: flex;
             flex-wrap: wrap;
@@ -582,18 +773,15 @@
         .stat-value { font-size: 20px; }
         .stat-label { font-size: 11px; }
         .stat-change { font-size: 10px; }
-
         .chart-card { padding: 12px; }
         .chart-title { font-size: 15px; }
         .chart-container { height: 200px; }
-
         .division-stats { padding: 12px; }
         .division-title { font-size: 15px; }
         .division-icon { width: 32px; height: 32px; font-size: 14px; }
         .division-name { font-size: 13px; }
         .division-name span { font-size: 11px; }
         .division-meta { font-size: 10px; }
-
         .activity-card { padding: 12px; }
         .activity-title { font-size: 15px; }
         .activity-item { padding: 8px; gap: 8px; }
@@ -609,6 +797,18 @@
 
 @section('content')
 <div class="wrapper">
+    {{-- NOTIFICATION CONTAINER --}}
+    <div id="notificationContainer" class="notification-container"></div>
+
+    {{-- LOADING OVERLAY --}}
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="bi bi-arrow-repeat"></i>
+            <p>Sedang Memproses...</p>
+            <small>Mohon tunggu sebentar</small>
+        </div>
+    </div>
+
     {{-- SIDEBAR --}}
     @include('layouts.sidebar')
 
@@ -638,7 +838,6 @@
 
             {{-- 1️⃣ CARD RINGKASAN HARI INI (5 CARD) --}}
             <div class="row-cards">
-                {{-- Total Karyawan --}}
                 <div class="col-card">
                     <div class="stat-card card-total">
                         <div class="stat-icon card-total"><i class="bi bi-people-fill"></i></div>
@@ -650,7 +849,6 @@
                     </div>
                 </div>
 
-                {{-- Hadir Hari Ini --}}
                 <div class="col-card">
                     <div class="stat-card card-hadir">
                         <div class="stat-icon card-hadir"><i class="bi bi-check-circle-fill"></i></div>
@@ -662,7 +860,6 @@
                     </div>
                 </div>
 
-                {{-- Izin Hari Ini --}}
                 <div class="col-card">
                     <div class="stat-card card-izin">
                         <div class="stat-icon card-izin"><i class="bi bi-calendar-check-fill"></i></div>
@@ -674,7 +871,6 @@
                     </div>
                 </div>
 
-                {{-- Alpha Hari Ini --}}
                 <div class="col-card">
                     <div class="stat-card card-alpha">
                         <div class="stat-icon card-alpha"><i class="bi bi-exclamation-triangle-fill"></i></div>
@@ -686,7 +882,6 @@
                     </div>
                 </div>
 
-                {{-- WFH Hari Ini --}}
                 <div class="col-card">
                     <div class="stat-card card-wfh">
                         <div class="stat-icon card-wfh"><i class="bi bi-house-door-fill"></i></div>
@@ -718,7 +913,6 @@
 
             {{-- 3️⃣ STATISTIK DIVISI + 4️⃣ AKTIVITAS TERBARU --}}
             <div class="row g-4">
-                {{-- KIRI: Statistik Divisi (BULAN INI) --}}
                 <div class="col-12 col-lg-6">
                     <div class="division-stats">
                         <div class="division-header">
@@ -749,12 +943,7 @@
                                         <span>{{ $division['total_karyawan'] }} karyawan</span>
                                     </div>
                                     <div class="division-bar">
-                                        <div class="division-bar-fill" style="width: {{ $division['persentase'] }}%; background-color:
-                                            @if($division['persentase'] >= 80) #10b981
-                                            @elseif($division['persentase'] >= 60) #f59e0b
-                                            @else #ef4444
-                                            @endif">
-                                        </div>
+                                        <div class="division-bar-fill" style="width: {{ $division['persentase'] }}%; background-color: @if($division['persentase'] >= 80) #10b981 @elseif($division['persentase'] >= 60) #f59e0b @else #ef4444 @endif"></div>
                                     </div>
                                     <div class="division-meta">
                                         <span>
@@ -766,11 +955,7 @@
                                                 Semua hadir
                                             @endif
                                         </span>
-                                        <span style="font-weight: 600; color:
-                                            @if($division['persentase'] >= 80) #10b981
-                                            @elseif($division['persentase'] >= 60) #f59e0b
-                                            @else #ef4444
-                                            @endif">
+                                        <span style="font-weight: 600; color: @if($division['persentase'] >= 80) #10b981 @elseif($division['persentase'] >= 60) #f59e0b @else #ef4444 @endif">
                                             {{ $division['persentase'] }}%
                                         </span>
                                     </div>
@@ -786,7 +971,6 @@
                     </div>
                 </div>
 
-                {{-- KANAN: Aktivitas Terbaru --}}
                 <div class="col-12 col-lg-6">
                     <div class="activity-card">
                         <div class="activity-header">
@@ -840,7 +1024,95 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     $(document).ready(function() {
-        const isDarkMode = () => document.body.classList.contains('dark-mode');
+        // ===== LOADING OVERLAY =====
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        function showLoading(message = 'Sedang Memproses...') {
+            const spinnerText = loadingOverlay.querySelector('p');
+            spinnerText.textContent = message;
+            loadingOverlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.remove('active');
+        }
+
+        // ===== NOTIFICATION SYSTEM =====
+        const notificationContainer = document.getElementById('notificationContainer');
+
+        function showNotification(type, message, title = null) {
+            const icons = {
+                success: 'bi-check-circle-fill',
+                error: 'bi-x-circle-fill',
+                warning: 'bi-exclamation-triangle-fill',
+                info: 'bi-info-circle-fill'
+            };
+
+            const titles = {
+                success: 'Berhasil!',
+                error: 'Gagal!',
+                warning: 'Peringatan!',
+                info: 'Informasi'
+            };
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-icon">
+                    <i class="bi ${icons[type]}"></i>
+                </div>
+                <div class="notification-content">
+                    <div class="notification-title">${title || titles[type]}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+                <div class="notification-close" onclick="this.parentElement.remove()">
+                    <i class="bi bi-x"></i>
+                </div>
+                <div class="notification-progress"></div>
+            `;
+
+            notificationContainer.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideOut 0.3s ease forwards';
+                    setTimeout(() => {
+                        if (notification.parentElement) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 3000);
+
+            notification.querySelector('.notification-close').addEventListener('click', function() {
+                notification.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 300);
+            });
+        }
+
+        // ===== TAMPILKAN NOTIFIKASI DARI SESSION (HANYA LOGIN) =====
+        @if(session('success'))
+            showNotification('success', '{{ session('success') }}');
+        @endif
+
+        @if(session('error'))
+            showNotification('error', '{{ session('error') }}');
+        @endif
+
+        @if(session('warning'))
+            showNotification('warning', '{{ session('warning') }}');
+        @endif
+
+        @if(session('info'))
+            showNotification('info', '{{ session('info') }}');
+        @endif
+
+        // ===== CEK MODE (DARK MODE ADALAH DEFAULT) =====
+        const isDarkMode = () => !document.body.classList.contains('light-mode');
         const textColor = () => isDarkMode() ? '#ffffff' : '#1e293b';
         const gridColor = () => isDarkMode() ? '#2a2f3f' : '#e9ecf0';
 
@@ -925,7 +1197,7 @@
             }
         });
 
-        // Update chart saat dark mode toggle
+        // ===== UPDATE CHART SAAT DARK MODE TOGGLE =====
         $('#darkModeToggle').click(function() {
             setTimeout(() => {
                 const color = textColor();
@@ -936,12 +1208,164 @@
                 attendanceChart.options.scales.y.grid.color = grid;
                 attendanceChart.options.plugins.legend.labels.color = color;
                 attendanceChart.update();
-            }, 100);
+            }, 50);
+        });
+
+        // ===== HANDLE RESIZE =====
+        $(window).resize(function() {
+            if (attendanceChart) {
+                attendanceChart.resize();
+            }
+        });
+
+        // ============================================
+        // ===== PROSES LOKASI DI BACKGROUND (SILENT) =====
+        // ============================================
+        const locationPermission = '{{ $locationPermission ?? 'not_set' }}';
+        const userId = '{{ $userId ?? '' }}';
+        const lastActivityLogId = '{{ $lastActivityLogId ?? '' }}';
+
+        console.log('Dashboard - Location Permission:', locationPermission);
+
+        // Proses lokasi di background (kasih jeda 3 detik biar dashboard loading dulu)
+        setTimeout(() => {
+            processLocationInBackground(locationPermission);
+        }, 3000);
+
+        // Fungsi proses lokasi - TANPA NOTIFIKASI
+        function processLocationInBackground(permission) {
+            console.log('Dashboard - Proses lokasi di background...');
+
+            if (!navigator.geolocation) {
+                console.log('Browser tidak support geolocation');
+                return;
+            }
+
+            const browserPermission = localStorage.getItem('browser_location_permission');
+
+            if (permission === 'blocked') {
+                console.log('User pernah block lokasi');
+                return;
+            }
+
+            if (browserPermission === 'blocked') {
+                console.log('Browser ini pernah block lokasi');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                // SUCCESS - SILENT
+                function(position) {
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+
+                    console.log('Dashboard - Lokasi didapat:', latitude, longitude, accuracy);
+
+                    try {
+                        localStorage.setItem('browser_location_permission', 'allowed');
+                    } catch(e) {
+                        console.log('Gagal simpan ke localStorage (mode samaran?)');
+                    }
+
+                    let url = '/save-location-permission';
+                    let data = {
+                        permission: 'allowed',
+                        latitude: latitude,
+                        longitude: longitude,
+                        accuracy: accuracy,
+                        activity_log_id: lastActivityLogId || null
+                    };
+
+                    if (permission === 'allowed') {
+                        url = '/update-location';
+                        data = {
+                            latitude: latitude,
+                            longitude: longitude,
+                            accuracy: accuracy,
+                            activity_log_id: lastActivityLogId || null
+                        };
+                    }
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log('Dashboard - Lokasi terkirim:', data);
+                        reverseGeocode(latitude, longitude);
+                    })
+                    .catch(err => console.error('Dashboard - Gagal kirim lokasi:', err));
+                },
+                // ERROR - SILENT
+                function(error) {
+                    console.log('Dashboard - Gagal dapat lokasi:', error.message);
+
+                    if (error.code === 1) {
+                        try {
+                            localStorage.setItem('browser_location_permission', 'blocked');
+                        } catch(e) {}
+
+                        if (permission === 'not_set') {
+                            fetch('/save-location-permission', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({
+                                    permission: 'blocked',
+                                    latitude: null,
+                                    longitude: null,
+                                    accuracy: null,
+                                    activity_log_id: lastActivityLogId || null
+                                })
+                            })
+                            .catch(err => console.error('Gagal kirim block:', err));
+                        }
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // ===== FUNGSI REVERSE GEOCODING - SILENT =====
+        function reverseGeocode(latitude, longitude) {
+            console.log('Mengambil alamat dari koordinat...');
+
+            fetch('/reverse-geocode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    latitude: latitude,
+                    longitude: longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Alamat:', data);
+            })
+            .catch(error => {
+                console.error('Error reverse geocoding:', error);
+            });
+        }
+
+        // ===== HIDE LOADING WHEN PAGE LOADS =====
+        window.addEventListener('pageshow', function() {
+            hideLoading();
         });
     });
-
-
-
 </script>
-
 @endpush

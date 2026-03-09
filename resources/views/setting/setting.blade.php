@@ -1,8 +1,7 @@
 @extends('layouts.partials.app')
 
-@section('title', 'Pengaturan Sistem - Wadul Guse')
+@section('title', 'Pengaturan Sistem - ' . ($company->name ?? '-'))
 @section('page-title', 'Pengaturan Sistem')
-
 @push('styles')
 <style>
     /* ===== CONTENT AREA ===== */
@@ -327,6 +326,7 @@
         cursor: pointer;
         transition: all 0.2s ease;
         margin-top: 20px;
+        position: relative;
     }
 
     .btn-save:hover {
@@ -337,6 +337,20 @@
 
     .btn-save i {
         font-size: 18px;
+    }
+
+    .btn-save.loading {
+        pointer-events: none;
+        opacity: 0.8;
+    }
+
+    .btn-save.loading i {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 
     /* ===== MODAL ===== */
@@ -446,6 +460,95 @@
         box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
     }
 
+    .btn-secondary {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--accent-soft);
+        color: var(--accent-color);
+        border-color: var(--accent-color);
+    }
+
+    /* ===== LOADING OVERLAY ===== */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 100000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(3px);
+    }
+
+    .loading-overlay.active {
+        display: flex;
+    }
+
+    .loading-spinner {
+        background-color: var(--bg-card);
+        border-radius: 16px;
+        padding: 30px 40px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        animation: zoomIn 0.3s ease;
+    }
+
+    .loading-spinner i {
+        font-size: 50px;
+        color: var(--accent-color);
+        margin-bottom: 15px;
+        display: inline-block;
+        animation: spin 1s linear infinite;
+    }
+
+    .loading-spinner p {
+        color: var(--text-primary);
+        font-size: 16px;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    @keyframes zoomIn {
+        from {
+            transform: scale(0.8);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    /* ===== ALERT ===== */
+    .alert-success {
+        background-color: rgba(16, 185, 129, 0.1);
+        border-left: 4px solid #10b981;
+        color: #10b981;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .alert-success i {
+        font-size: 20px;
+    }
+
     /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
         .content-area {
@@ -489,6 +592,15 @@
 
 @section('content')
 <div class="wrapper">
+    {{-- LOADING OVERLAY --}}
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="bi bi-arrow-repeat"></i>
+            <p>Menyimpan Pengaturan...</p>
+            <small style="color: var(--text-secondary); font-size: 13px; display: block; margin-top: 5px;">Mohon tunggu sebentar</small>
+        </div>
+    </div>
+
     {{-- SIDEBAR --}}
     @include('layouts.sidebar')
 
@@ -513,6 +625,14 @@
                             Data perusahaan akan digunakan di sidebar, navbar, laporan, dan halaman login.
                         </p>
                     </div>
+
+                    {{-- TAMPILKAN ALERT SUKSES --}}
+                    @if(session('success'))
+                        <div class="alert-success">
+                            <i class="bi bi-check-circle-fill"></i>
+                            {{ session('success') }}
+                        </div>
+                    @endif
 
                     {{-- INFO LOG - IP, DEVICE, OS, WAKTU --}}
                     <div class="info-log">
@@ -561,7 +681,10 @@
                         </div>
                     </div>
 
-                    <form id="settingForm" enctype="multipart/form-data">
+                    {{-- FORM SETTINGS --}}
+                    <form id="settingForm" action="{{ route('setting.update') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+
                         {{-- SECTION 1: IDENTITAS PERUSAHAAN --}}
                         <div class="settings-section">
                             <div class="section-title">
@@ -576,7 +699,16 @@
                                         <i class="bi bi-building"></i>
                                         Nama Perusahaan <span style="color: #ef4444;">*</span>
                                     </label>
-                                    <input type="text" class="form-control" id="namaPerusahaan" value="Alena Mandiri Group" placeholder="Masukkan nama perusahaan">
+                                    <input type="text"
+                                           class="form-control @error('name') is-invalid @enderror"
+                                           name="name"
+                                           id="name"
+                                           value="{{ old('name', $company->name) }}"
+                                           placeholder="Masukkan nama perusahaan"
+                                           required>
+                                    @error('name')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
                             </div>
 
@@ -589,17 +721,29 @@
                                     </label>
                                     <div class="upload-container">
                                         <div class="logo-preview" id="logoPreview">
-                                            <i class="bi bi-building"></i>
+                                            @if($company->logo)
+                                                <img src="{{ asset('storage/' . $company->logo) }}" alt="Logo">
+                                            @else
+                                                <i class="bi bi-building"></i>
+                                            @endif
                                         </div>
                                         <div class="upload-wrapper">
-                                            <button type="button" class="upload-btn" onclick="document.getElementById('logoInput').click()">
+                                            <button type="button" class="upload-btn" onclick="document.getElementById('logo').click()">
                                                 <i class="bi bi-cloud-upload"></i>
                                                 Upload Logo
                                             </button>
-                                            <input type="file" id="logoInput" accept="image/*" style="display: none;" onchange="previewLogo(this)">
+                                            <input type="file"
+                                                   name="logo"
+                                                   id="logo"
+                                                   accept="image/jpeg,image/png,image/jpg,image/gif"
+                                                   style="display: none;"
+                                                   onchange="previewLogo(this)">
                                             <div class="upload-info">
-                                                Format: JPG, PNG. Maks 2MB
+                                                Format: JPG, PNG, GIF. Maks 2MB
                                             </div>
+                                            @error('logo')
+                                                <small class="text-danger">{{ $message }}</small>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -614,17 +758,29 @@
                                     </label>
                                     <div class="favicon-row">
                                         <div class="favicon-preview" id="faviconPreview">
-                                            <i class="bi bi-building"></i>
+                                            @if($company->favicon)
+                                                <img src="{{ asset('storage/' . $company->favicon) }}" alt="Favicon">
+                                            @else
+                                                <i class="bi bi-building"></i>
+                                            @endif
                                         </div>
                                         <div>
-                                            <button type="button" class="upload-btn" style="padding: 8px 16px;" onclick="document.getElementById('faviconInput').click()">
+                                            <button type="button" class="upload-btn" style="padding: 8px 16px;" onclick="document.getElementById('favicon').click()">
                                                 <i class="bi bi-cloud-upload"></i>
                                                 Upload Favicon
                                             </button>
-                                            <input type="file" id="faviconInput" accept=".ico,.png" style="display: none;" onchange="previewFavicon(this)">
+                                            <input type="file"
+                                                   name="favicon"
+                                                   id="favicon"
+                                                   accept=".ico,image/png"
+                                                   style="display: none;"
+                                                   onchange="previewFavicon(this)">
                                             <div class="upload-info">
                                                 Format: ICO, PNG. Maks 500KB
                                             </div>
+                                            @error('favicon')
+                                                <small class="text-danger">{{ $message }}</small>
+                                            @enderror
                                         </div>
                                     </div>
                                 </div>
@@ -645,7 +801,15 @@
                                         <i class="bi bi-envelope"></i>
                                         Email Perusahaan
                                     </label>
-                                    <input type="email" class="form-control" id="emailPerusahaan" value="info@alenamandiri.com" placeholder="contoh@perusahaan.com">
+                                    <input type="email"
+                                           class="form-control @error('email') is-invalid @enderror"
+                                           name="email"
+                                           id="email"
+                                           value="{{ old('email', $company->email) }}"
+                                           placeholder="contoh@perusahaan.com">
+                                    @error('email')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
 
                                 {{-- TELEPON --}}
@@ -654,7 +818,15 @@
                                         <i class="bi bi-telephone"></i>
                                         Nomor Telepon
                                     </label>
-                                    <input type="text" class="form-control" id="teleponPerusahaan" value="(021) 1234-5678" placeholder="(021) 1234-5678">
+                                    <input type="text"
+                                           class="form-control @error('phone') is-invalid @enderror"
+                                           name="phone"
+                                           id="phone"
+                                           value="{{ old('phone', $company->phone) }}"
+                                           placeholder="(021) 1234-5678">
+                                    @error('phone')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
                             </div>
 
@@ -665,7 +837,14 @@
                                         <i class="bi bi-geo-alt"></i>
                                         Alamat Perusahaan
                                     </label>
-                                    <textarea class="form-control" id="alamatPerusahaan" rows="3" placeholder="Jl. Contoh No. 123, Jakarta">Jl. Raya Contoh No. 123, Jakarta Selatan</textarea>
+                                    <textarea class="form-control @error('address') is-invalid @enderror"
+                                              name="address"
+                                              id="address"
+                                              rows="3"
+                                              placeholder="Jl. Contoh No. 123, Jakarta">{{ old('address', $company->address) }}</textarea>
+                                    @error('address')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
                             </div>
 
@@ -676,13 +855,21 @@
                                         <i class="bi bi-globe"></i>
                                         Website (Opsional)
                                     </label>
-                                    <input type="url" class="form-control" id="websitePerusahaan" value="https://www.alenamandiri.com" placeholder="https://www.perusahaan.com">
+                                    <input type="url"
+                                           class="form-control @error('website') is-invalid @enderror"
+                                           name="website"
+                                           id="website"
+                                           value="{{ old('website', $company->website) }}"
+                                           placeholder="https://www.perusahaan.com">
+                                    @error('website')
+                                        <small class="text-danger">{{ $message }}</small>
+                                    @enderror
                                 </div>
                             </div>
                         </div>
 
                         {{-- TOMBOL SIMPAN --}}
-                        <button type="button" class="btn-save" onclick="simpanPengaturan()">
+                        <button type="button" class="btn-save" id="saveButton" onclick="confirmSave()">
                             <i class="bi bi-save"></i>
                             Simpan Pengaturan
                         </button>
@@ -695,6 +882,39 @@
     </div>
 </div>
 
+{{-- MODAL KONFIRMASI SIMPAN --}}
+<div class="modal" id="confirmModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">
+                <i class="bi bi-question-circle me-2"></i>Konfirmasi Simpan
+            </h5>
+            <button class="modal-close" onclick="closeConfirmModal()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="modal-body" style="text-align: center;">
+            <div style="font-size: 60px; color: var(--accent-color); margin-bottom: 20px;">
+                <i class="bi bi-question-circle"></i>
+            </div>
+            <h4 style="color: var(--text-primary); margin-bottom: 10px;">Yakin ingin menyimpan?</h4>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 5px;">
+                Pastikan data yang Anda masukkan sudah benar.
+            </p>
+        </div>
+
+        <div class="modal-footer" style="justify-content: center;">
+            <button class="btn-secondary" onclick="closeConfirmModal()">
+                <i class="bi bi-x me-2"></i>Batal
+            </button>
+            <button class="btn-primary" onclick="submitForm()">
+                <i class="bi bi-check-lg me-2"></i>Ya, Simpan
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- MODAL SUKSES --}}
 <div class="modal" id="successModal">
     <div class="modal-content">
@@ -702,12 +922,12 @@
             <h5 class="modal-title">
                 <i class="bi bi-check-circle me-2"></i>Berhasil
             </h5>
-            <button class="modal-close" onclick="closeModal()">
+            <button class="modal-close" onclick="closeSuccessModal()">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
 
-        <div class="modal-body">
+        <div class="modal-body" style="text-align: center;">
             <div style="font-size: 60px; color: #10b981; margin-bottom: 20px;">
                 <i class="bi bi-check-circle"></i>
             </div>
@@ -717,8 +937,8 @@
             </p>
         </div>
 
-        <div class="modal-footer">
-            <button class="btn-primary" onclick="closeModal()">
+        <div class="modal-footer" style="justify-content: center;">
+            <button class="btn-primary" onclick="closeSuccessModal()">
                 <i class="bi bi-check-lg me-2"></i>OK
             </button>
         </div>
@@ -730,7 +950,6 @@
 <script>
     // ===== FUNGSI UNTUK MENDAPATKAN INFORMASI AKSES =====
     function getIPAddress() {
-        // Menggunakan API publik untuk mendapatkan IP
         fetch('https://api.ipify.org?format=json')
             .then(response => response.json())
             .then(data => {
@@ -745,16 +964,14 @@
     function getDeviceInfo() {
         const ua = navigator.userAgent;
         let device = 'Desktop';
+        let browser = 'Unknown';
 
-        // Deteksi device
         if (/mobile/i.test(ua)) {
             device = 'Mobile';
         } else if (/tablet/i.test(ua)) {
             device = 'Tablet';
         }
 
-        // Deteksi browser
-        let browser = 'Unknown';
         if (ua.indexOf('Chrome') > -1) {
             browser = 'Chrome';
         } else if (ua.indexOf('Firefox') > -1) {
@@ -837,72 +1054,74 @@
         }
     }
 
-    // ===== SIMPAN PENGATURAN =====
-    function simpanPengaturan() {
+    // ===== LOADING FUNCTIONS =====
+    function showLoading() {
+        document.getElementById('loadingOverlay').classList.add('active');
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+
+    // ===== MODAL FUNCTIONS =====
+    function confirmSave() {
         // Validasi nama perusahaan
-        const namaPerusahaan = document.getElementById('namaPerusahaan').value.trim();
-        if (!namaPerusahaan) {
+        const name = document.getElementById('name').value.trim();
+        if (!name) {
             alert('Nama perusahaan harus diisi!');
             return;
         }
 
-        // Ambil data
-        const data = {
-            namaPerusahaan: namaPerusahaan,
-            emailPerusahaan: document.getElementById('emailPerusahaan').value,
-            teleponPerusahaan: document.getElementById('teleponPerusahaan').value,
-            alamatPerusahaan: document.getElementById('alamatPerusahaan').value,
-            websitePerusahaan: document.getElementById('websitePerusahaan').value,
-            ipAddress: document.getElementById('ipAddress').innerText,
-            device: document.getElementById('device').innerText,
-            os: document.getElementById('os').innerText,
-            waktuAkses: document.getElementById('waktuAkses').innerText,
-            timezone: document.getElementById('timezone').innerText
-        };
-
-        // Ambil file logo dan favicon
-        const logo = document.getElementById('logoInput').files[0];
-        const favicon = document.getElementById('faviconInput').files[0];
-
-        // Log ke console
-        console.log('=================================');
-        console.log('📋 INFORMASI AKSES');
-        console.log('=================================');
-        console.log('🌐 IP Address:', data.ipAddress);
-        console.log('📱 Device:', data.device);
-        console.log('💻 Operating System:', data.os);
-        console.log('⏰ Waktu Akses:', data.waktuAkses);
-        console.log('🕒 Timezone:', data.timezone);
-        console.log('=================================');
-        console.log('🏢 DATA PERUSAHAAN');
-        console.log('=================================');
-        console.log('📌 Nama Perusahaan:', data.namaPerusahaan);
-        console.log('📧 Email:', data.emailPerusahaan);
-        console.log('📞 Telepon:', data.teleponPerusahaan);
-        console.log('📍 Alamat:', data.alamatPerusahaan);
-        console.log('🌍 Website:', data.websitePerusahaan);
-        console.log('=================================');
-        console.log('🖼️ Logo:', logo ? logo.name : 'Tidak diubah');
-        console.log('🔖 Favicon:', favicon ? favicon.name : 'Tidak diubah');
-        console.log('=================================');
-
-        // Tampilkan modal sukses
-        document.getElementById('successModal').classList.add('active');
-
-        // Update pesan sukses dengan info akses
-        document.getElementById('successMessage').innerHTML = `
-            Data perusahaan berhasil disimpan.<br>
-            <small style="color: var(--text-secondary); font-size: 11px; margin-top: 8px; display: block;">
-                IP: ${data.ipAddress} | ${data.device} | ${data.os}<br>
-                ${data.waktuAkses}
-            </small>
-        `;
+        // Tampilkan modal konfirmasi
+        document.getElementById('confirmModal').classList.add('active');
     }
 
-    // ===== MODAL FUNCTIONS =====
-    function closeModal() {
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('active');
+    }
+
+    function submitForm() {
+        closeConfirmModal();
+        showLoading();
+
+        // Disable tombol simpan
+        const saveButton = document.getElementById('saveButton');
+        saveButton.disabled = true;
+        saveButton.classList.add('loading');
+        saveButton.innerHTML = '<i class="bi bi-arrow-repeat"></i> Menyimpan...';
+
+        // Submit form
+        document.getElementById('settingForm').submit();
+    }
+
+    function closeSuccessModal() {
         document.getElementById('successModal').classList.remove('active');
     }
+
+    // ===== CEK RESPONSE DARI SERVER =====
+    @if(session('success'))
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sembunyikan loading jika ada
+            hideLoading();
+
+            // Tampilkan modal sukses
+            document.getElementById('successModal').classList.add('active');
+
+            // Update pesan sukses dengan info akses
+            setTimeout(function() {
+                document.getElementById('successMessage').innerHTML = `
+                    Data perusahaan berhasil disimpan.<br>
+                    <small style="color: var(--text-secondary); font-size: 11px; margin-top: 8px; display: block;">
+                        Diperbarui oleh: {{ auth()->user()->name ?? 'System' }}<br>
+                        IP: ${document.getElementById('ipAddress').innerText} |
+                        ${document.getElementById('device').innerText} |
+                        ${document.getElementById('os').innerText}<br>
+                        ${document.getElementById('waktuAkses').innerText}
+                    </small>
+                `;
+            }, 500);
+        });
+    @endif
 
     // ===== INIT =====
     document.addEventListener('DOMContentLoaded', function() {
@@ -913,19 +1132,24 @@
 
         // Update waktu setiap detik
         setInterval(getWaktuAkses, 1000);
+
+        // Sembunyikan loading jika ada
+        hideLoading();
     });
 
     // Close modal with Escape key
-    $(document).keydown(function(e) {
+    document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            closeModal();
+            closeConfirmModal();
+            closeSuccessModal();
         }
     });
 
     // Close modal when clicking outside
-    $(document).click(function(e) {
-        if ($(e.target).hasClass('modal')) {
-            closeModal();
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            closeConfirmModal();
+            closeSuccessModal();
         }
     });
 </script>

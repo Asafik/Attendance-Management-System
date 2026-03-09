@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
             return;
         }
 
-        // Buat Super Admin
+        // Buat Super Admin (USER 1)
         User::firstOrCreate(
             ['email' => 'superadmin@alenamandiri.com'],
             [
@@ -31,10 +31,15 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role_id' => $superAdmin->id,
                 'is_active' => true,
+                // Field session biarkan null dulu
+                'session_id' => null,
+                'last_login_at' => null,
+                'last_ip' => null,
+                'last_user_agent' => null,
             ]
         );
 
-        // Buat Admin
+        // Buat Admin (USER 2)
         User::firstOrCreate(
             ['email' => 'admin@alenamandiri.com'],
             [
@@ -42,6 +47,26 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role_id' => $admin->id,
                 'is_active' => true,
+                // Field session biarkan null dulu
+                'session_id' => null,
+                'last_login_at' => null,
+                'last_ip' => null,
+                'last_user_agent' => null,
+            ]
+        );
+
+        // BUAT 1 USER KHUSUS TESTING (USER 3)
+        User::firstOrCreate(
+            ['email' => 'test@alenamandiri.com'],
+            [
+                'name' => 'User Testing',
+                'password' => Hash::make('test123'),
+                'role_id' => $admin->id, // atau $superAdmin->id kalau mau super admin
+                'is_active' => true,
+                'session_id' => null,
+                'last_login_at' => null,
+                'last_ip' => null,
+                'last_user_agent' => null,
             ]
         );
     }

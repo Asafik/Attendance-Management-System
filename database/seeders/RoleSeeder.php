@@ -24,10 +24,6 @@ class RoleSeeder extends Seeder
                 'display_name' => 'Admin',
             ],
             [
-                'name' => 'hrd',
-                'display_name' => 'HRD',
-            ],
-            [
                 'name' => 'manager',
                 'display_name' => 'Manager',
             ],

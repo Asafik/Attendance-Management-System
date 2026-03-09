@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             BankSeeder::class,
             EmployeeSeeder::class,
             AttendanceSeeder::class,
+            CompanyProfileSeeder::class,
 
         ]);
     }

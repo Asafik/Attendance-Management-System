@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/DashboardController.php
 
 namespace App\Http\Controllers;
 
@@ -7,11 +8,21 @@ use App\Models\Employee;
 use App\Models\Attendance;
 use App\Models\Division;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Session; // ← TAMBAHKAN INI
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        // ===== AMBIL DATA SESSION DARI LOGIN =====
+        $locationPermission = Session::get('location_permission', 'not_set');
+        $userId = Session::get('user_id');
+        $lastActivityLogId = Session::get('last_activity_log_id');
+
+        // Hapus session setelah diambil (biar gak numpuk)
+        Session::forget(['location_permission', 'user_id', 'last_activity_log_id']);
+        // ==========================================
+
         // ===== FILTER BULAN (default bulan ini) =====
         $selectedMonth = $request->month ?? now()->format('Y-m');
         $selectedYear = Carbon::parse($selectedMonth)->year;
@@ -182,7 +193,11 @@ class DashboardController extends Controller
             'recentActivities',
             'months',
             'selectedMonth',
-            'selectedMonthName'
+            'selectedMonthName',
+            // ===== TAMBAHKAN DATA LOKASI =====
+            'locationPermission',
+            'userId',
+            'lastActivityLogId'
         ));
     }
 

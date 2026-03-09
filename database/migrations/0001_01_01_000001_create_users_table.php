@@ -1,5 +1,5 @@
 <?php
-// database/migrations/2024_01_01_000000_create_users_table.php
+// database/migrations/0001_01_01_000001_create_users_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -23,8 +23,13 @@ return new class extends Migration
                   ->constrained('roles')
                   ->onDelete('cascade');
 
-            $table->boolean('is_active')->default(true);
+            // Field untuk tracking session (1 akun 1 device)
+            $table->string('session_id')->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->string('last_ip')->nullable();
+            $table->text('last_user_agent')->nullable();
 
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });

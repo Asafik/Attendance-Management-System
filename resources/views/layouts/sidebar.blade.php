@@ -2,7 +2,7 @@
     <div class="sidebar-logo">
         <i class="fa-solid fa-building"></i>
         <div class="logo-text">
-            <span>Alena Mandiri Group</span>
+             <span>{{ $company->name ?? '-' }}</span>
             <small>Attendance System</small>
         </div>
     </div>
@@ -95,6 +95,14 @@
                 <a href="{{ route('setting.index') }}" class="nav-link {{ request()->routeIs('setting.index') ? 'active' : '' }}">
                     <i class="menu-icon fa-solid fa-gear"></i>
                     <span class="menu-text">Pengaturan</span>
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{{ route('activity-log.index') }}"
+                    class="nav-link {{ request()->routeIs('activity-log.index') ? 'active' : '' }}">
+                    <i class="menu-icon fa-solid fa-clock-rotate-left"></i>
+                    <span class="menu-text">Log Aktivitas</span>
                 </a>
             </div>
         </div>

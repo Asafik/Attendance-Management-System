@@ -1,6 +1,6 @@
 @extends('layouts.partials.app')
 
-@section('title', 'Login - Wadul Guse')
+@section('title', 'Login - ' . ($company->name ?? '-'))
 @section('page-title', 'Login')
 
 @section('content')
@@ -55,7 +55,7 @@
                         <div style="width: 80px; height: 80px; background: var(--accent-soft); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; border: 2px solid var(--accent-color);">
                             <i class="bi bi-building" style="font-size: 40px; color: var(--accent-color);"></i>
                         </div>
-                        <h2 style="color: var(--text-primary); font-weight: 700; margin-bottom: 5px;">Wadul Guse</h2>
+                        <h2 style="color: var(--text-primary); font-weight: 700; margin-bottom: 5px;">{{ $company->name ?? '-' }}</h2>
                         <p style="color: var(--text-secondary); font-size: 14px;">Attendance System</p>
                     </div>
 
@@ -480,6 +480,7 @@
 
     // ===== FORM SUBMIT WITH LOADING =====
     document.getElementById('loginForm').addEventListener('submit', function(e) {
+        // Tampilkan loading
         showLoading('Memproses login...');
 
         // Disable button dan tambah class loading
@@ -487,13 +488,20 @@
         loginBtn.classList.add('btn-loading');
         loginBtn.disabled = true;
 
-        // Biarkan form submit
+        // Biarkan form submit normal
         return true;
     });
 
     // ===== HIDE LOADING WHEN PAGE LOADS =====
     window.addEventListener('pageshow', function() {
         hideLoading();
+
+        // Reset button login
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+            loginBtn.classList.remove('btn-loading');
+            loginBtn.disabled = false;
+        }
     });
 </script>
 @endpush

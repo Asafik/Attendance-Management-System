@@ -1793,28 +1793,28 @@
 
                         <div class="table-actions">
                             {{-- SEARCH --}}
-                            <form action="{{ route('employees.index') }}" method="GET" class="search-wrapper">
+                            <div class="search-wrapper">
                                 <i class="search-icon bi bi-search"></i>
-                                <input type="text" name="search" class="search-input"
-                                       placeholder="Cari karyawan..." value="{{ request('search') }}">
-                            </form>
+                                <input type="text" id="searchInput" class="search-input"
+                                       placeholder="Cari karyawan..." onkeyup="filterEmployees()">
+                            </div>
 
                             {{-- FILTER DIVISI DROPDOWN --}}
                             <div class="filter-dropdown" id="filterDivisiDropdown">
                                 <div class="filter-btn">
                                     <i class="bi bi-building"></i>
-                                    <span>{{ request('division_id') ? $divisions->find(request('division_id'))->name : 'Divisi' }}</span>
+                                    <span id="selectedDivision">Semua Divisi</span>
                                     <i class="bi bi-chevron-down"></i>
                                 </div>
                                 <div class="filter-menu">
-                                    <a href="{{ route('employees.index', array_merge(request()->except('division_id'), ['division_id' => ''])) }}"
-                                       class="filter-item {{ !request('division_id') ? 'active' : '' }}">
+                                    <a href="javascript:void(0)" onclick="setFilter('division', '', 'Semua Divisi')"
+                                       class="filter-item active" data-value="">
                                         <i class="bi bi-briefcase"></i>
                                         Semua Divisi
                                     </a>
                                     @foreach($divisions as $division)
-                                    <a href="{{ route('employees.index', array_merge(request()->except('division_id'), ['division_id' => $division->id])) }}"
-                                       class="filter-item {{ request('division_id') == $division->id ? 'active' : '' }}">
+                                    <a href="javascript:void(0)" onclick="setFilter('division', '{{ $division->id }}', '{{ $division->name }}')"
+                                       class="filter-item" data-value="{{ $division->id }}">
                                         <i class="bi bi-building"></i>
                                         {{ $division->name }}
                                     </a>
@@ -1826,23 +1826,23 @@
                             <div class="filter-dropdown" id="filterStatusDropdown">
                                 <div class="filter-btn">
                                     <i class="bi bi-check-circle"></i>
-                                    <span>{{ request('status') ?: 'Status' }}</span>
+                                    <span id="selectedStatus">Semua Status</span>
                                     <i class="bi bi-chevron-down"></i>
                                 </div>
                                 <div class="filter-menu">
-                                    <a href="{{ route('employees.index', array_merge(request()->except('status'), ['status' => ''])) }}"
-                                       class="filter-item {{ !request('status') ? 'active' : '' }}">
+                                    <a href="javascript:void(0)" onclick="setFilter('status', '', 'Semua Status')"
+                                       class="filter-item active" data-value="">
                                         <i class="bi bi-list-ul"></i>
                                         Semua Status
                                     </a>
                                     <div class="filter-divider"></div>
-                                    <a href="{{ route('employees.index', array_merge(request()->except('status'), ['status' => 'Aktif'])) }}"
-                                       class="filter-item {{ request('status') == 'Aktif' ? 'active' : '' }}">
+                                    <a href="javascript:void(0)" onclick="setFilter('status', 'Aktif', 'Aktif')"
+                                       class="filter-item" data-value="Aktif">
                                         <i class="bi bi-check-circle" style="color: #10b981;"></i>
                                         Aktif
                                     </a>
-                                    <a href="{{ route('employees.index', array_merge(request()->except('status'), ['status' => 'Nonaktif'])) }}"
-                                       class="filter-item {{ request('status') == 'Nonaktif' ? 'active' : '' }}">
+                                    <a href="javascript:void(0)" onclick="setFilter('status', 'Nonaktif', 'Nonaktif')"
+                                       class="filter-item" data-value="Nonaktif">
                                         <i class="bi bi-x-circle" style="color: #ef4444;"></i>
                                         Nonaktif
                                     </a>
@@ -1853,13 +1853,13 @@
                             <div class="perpage-dropdown" id="perpageDropdown">
                                 <div class="perpage-btn">
                                     <i class="bi bi-list"></i>
-                                    <span>Tampil: {{ request('per_page', 10) }}</span>
+                                    <span id="selectedPerPage">Tampil: 5</span>
                                     <i class="bi bi-chevron-down"></i>
                                 </div>
                                 <div class="perpage-menu">
                                     @foreach([5,10,15,20,50] as $value)
-                                    <a href="{{ route('employees.index', array_merge(request()->except('per_page'), ['per_page' => $value])) }}"
-                                       class="perpage-item {{ request('per_page', 10) == $value ? 'active' : '' }}">
+                                    <a href="javascript:void(0)" onclick="setPerPage({{ $value }})"
+                                       class="perpage-item {{ $value == 5 ? 'active' : '' }}" data-value="{{ $value }}">
                                         {{ $value }}
                                     </a>
                                     @endforeach
@@ -1892,7 +1892,10 @@
                             </thead>
                             <tbody>
                                 @forelse($employees as $index => $employee)
-                                <tr>
+                                <tr class="employee-row" 
+                                    data-name="{{ strtolower($employee->name) }}" 
+                                    data-division-id="{{ $employee->division_id }}" 
+                                    data-status="{{ $employee->status }}">
                                     <td>{{ $index + 1 }}</td>
                                     <td>
                                         <div class="employee-info">
@@ -1949,27 +1952,37 @@
                                     </td>
                                 </tr>
                                 @empty
-                                <tr>
-                                    <td colspan="9" class="text-center py-4">
-                                        <i class="bi bi-emoji-frown" style="font-size: 24px; color: var(--text-secondary);"></i>
-                                        <p class="mt-2">Belum ada data karyawan</p>
+                                <tr id="noDataRow">
+                                    <td colspan="9" class="text-center py-5">
+                                        <div class="no-data-content">
+                                            <i class="bi bi-people" style="font-size: 48px; color: var(--text-secondary); opacity: 0.5;"></i>
+                                            <p class="mt-3 text-secondary">Belum ada data karyawan.</p>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforelse
+                                <tr id="emptySearchRow" style="display: none;">
+                                    <td colspan="9" class="text-center py-5">
+                                        <div class="no-data-content">
+                                            <i class="bi bi-search" style="font-size: 48px; color: var(--text-secondary); opacity: 0.5;"></i>
+                                            <p class="mt-3 text-secondary">Tidak ada karyawan yang sesuai dengan kriteria.</p>
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
 
                     {{-- PAGINATION --}}
-                    @if(method_exists($employees, 'links'))
-                    <div class="pagination-wrapper">
-                        <div class="pagination-info">
-                            Menampilkan {{ $employees->firstItem() ?? 0 }} - {{ $employees->lastItem() ?? 0 }}
-                            dari {{ $employees->total() }} data
+                    {{-- PAGINATION (Client Side) --}}
+                    <div class="pagination-wrapper" id="paginationWrapper">
+                        <div class="pagination-info" id="paginationInfo">
+                            {{-- Will be filled by JS --}}
                         </div>
-                        {{ $employees->withQueryString()->links() }}
+                        <ul class="pagination" id="paginationList">
+                            {{-- Will be filled by JS --}}
+                        </ul>
                     </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -2290,6 +2303,9 @@
             $('#deleteBtn').addClass('btn-loading').prop('disabled', true);
             return true;
         });
+
+        // Initialize display
+        filterEmployees();
     });
 
     // ===== MODAL FUNCTIONS =====
@@ -2377,14 +2393,7 @@
         }
     }
 
-    // Search with debounce
-    let searchTimeout;
-    $('.search-input').on('keyup', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            $(this).closest('form').submit();
-        }, 500);
-    });
+
 
     // Close modal with Escape key
     $(document).keydown(function(e) {
@@ -2409,5 +2418,153 @@
     window.addEventListener('pageshow', function() {
         hideLoading();
     });
+
+    // ===== CLIENT-SIDE FILTERING & PAGINATION =====
+    let currentFilters = {
+        search: '',
+        division: '',
+        status: ''
+    };
+
+    let currentPage = 1;
+    let rowsPerPage = 5;
+
+    function setFilter(type, value, text) {
+        currentFilters[type] = value;
+        currentPage = 1; // Reset to first page on filter change
+        
+        // Update UI dropdown text
+        if (type === 'division') {
+            document.getElementById('selectedDivision').textContent = text;
+            $('#filterDivisiDropdown .filter-item').removeClass('active');
+            $(`#filterDivisiDropdown .filter-item[data-value="${value}"]`).addClass('active');
+            $('#filterDivisiDropdown').removeClass('active');
+        } else if (type === 'status') {
+            document.getElementById('selectedStatus').textContent = text;
+            $('#filterStatusDropdown .filter-item').removeClass('active');
+            $(`#filterStatusDropdown .filter-item[data-value="${value}"]`).addClass('active');
+            $('#filterStatusDropdown').removeClass('active');
+        }
+        
+        filterEmployees();
+    }
+
+    function setPerPage(value) {
+        rowsPerPage = parseInt(value);
+        currentPage = 1;
+        
+        // Update UI
+        document.getElementById('selectedPerPage').textContent = `Tampil: ${value}`;
+        $('#perpageDropdown .perpage-item').removeClass('active');
+        $(`#perpageDropdown .perpage-item[data-value="${value}"]`).addClass('active');
+        $('#perpageDropdown').removeClass('active');
+        
+        filterEmployees();
+    }
+
+    function filterEmployees() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const rows = Array.from(document.querySelectorAll('.employee-row'));
+        
+        // 1. First, filter all rows based on criteria
+        const filteredRows = rows.filter(row => {
+            const name = row.getAttribute('data-name');
+            const divisionId = row.getAttribute('data-division-id');
+            const status = row.getAttribute('data-status');
+
+            const matchSearch = name.includes(searchTerm);
+            const matchDivision = currentFilters.division === '' || divisionId === currentFilters.division;
+            const matchStatus = currentFilters.status === '' || status === currentFilters.status;
+
+            return matchSearch && matchDivision && matchStatus;
+        });
+
+        const totalVisible = filteredRows.length;
+
+        // 2. Hide all rows first
+        rows.forEach(row => row.style.display = 'none');
+
+        // 3. Handle Pagination slicing
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        const rowsToDisplay = filteredRows.slice(startIndex, endIndex);
+
+        rowsToDisplay.forEach(row => {
+            row.style.display = '';
+        });
+
+        // 4. Update No Data message
+        const emptySearchRow = document.getElementById('emptySearchRow');
+        const noDataRow = document.getElementById('noDataRow');
+        
+        if (totalVisible === 0) {
+            if (noDataRow) {
+                emptySearchRow.style.display = 'none';
+            } else {
+                emptySearchRow.style.display = 'table-row';
+            }
+            document.getElementById('paginationWrapper').style.display = 'none';
+        } else {
+            emptySearchRow.style.display = 'none';
+            document.getElementById('paginationWrapper').style.display = 'flex';
+        }
+
+        // 5. Update UI Components
+        renderPagination(totalVisible);
+        updatePaginationInfo(totalVisible, startIndex + 1, Math.min(endIndex, totalVisible));
+    }
+
+    function renderPagination(totalRows) {
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+        const paginationList = document.getElementById('paginationList');
+        paginationList.innerHTML = '';
+
+        if (totalPages <= 1) {
+            return;
+        }
+
+        // Previous Button
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="javascript:void(0)" onclick="goToPage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></a>`;
+        paginationList.appendChild(prevLi);
+
+        // Page Numbers
+        let startPage = Math.max(1, currentPage - 1);
+        let endPage = Math.min(totalPages, startPage + 2);
+        
+        if (endPage === totalPages) {
+            startPage = Math.max(1, endPage - 2);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="javascript:void(0)" onclick="goToPage(${i})">${i}</a>`;
+            paginationList.appendChild(li);
+        }
+
+        // Next Button
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="javascript:void(0)" onclick="goToPage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></a>`;
+        paginationList.appendChild(nextLi);
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        filterEmployees();
+        // Scroll to top of table
+        document.getElementById('employeeTable').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function updatePaginationInfo(total, start, end) {
+        const info = document.getElementById('paginationInfo');
+        if (total === 0) {
+            info.textContent = 'Tidak ada data untuk ditampilkan';
+        } else {
+            info.textContent = `Menampilkan ${start} - ${end} dari ${total} data`;
+        }
+    }
 </script>
 @endpush

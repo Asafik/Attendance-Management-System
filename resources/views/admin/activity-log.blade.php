@@ -1215,16 +1215,16 @@
                             <div class="perpage-dropdown" id="perpageDropdown">
                                 <div class="perpage-btn">
                                     <i class="bi bi-list"></i>
-                                    <span id="selectedPerPage">Tampil: {{ $selectedPerPage }}</span>
+                                    <span id="selectedPerPage">Tampil: 5</span>
                                     <i class="bi bi-chevron-down"></i>
                                 </div>
                                 <div class="perpage-menu">
-                                    <div class="perpage-item {{ $selectedPerPage == 5 ? 'active' : '' }}" data-perpage="5">5</div>
-                                    <div class="perpage-item {{ $selectedPerPage == 10 ? 'active' : '' }}" data-perpage="10">10</div>
-                                    <div class="perpage-item {{ $selectedPerPage == 15 ? 'active' : '' }}" data-perpage="15">15</div>
-                                    <div class="perpage-item {{ $selectedPerPage == 20 ? 'active' : '' }}" data-perpage="20">20</div>
-                                    <div class="perpage-item {{ $selectedPerPage == 50 ? 'active' : '' }}" data-perpage="50">50</div>
-                                    <div class="perpage-item {{ $selectedPerPage == 100 ? 'active' : '' }}" data-perpage="100">100</div>
+                                    <div class="perpage-item" data-perpage="5">5</div>
+                                    <div class="perpage-item" data-perpage="10">10</div>
+                                    <div class="perpage-item" data-perpage="15">15</div>
+                                    <div class="perpage-item" data-perpage="20">20</div>
+                                    <div class="perpage-item" data-perpage="50">50</div>
+                                    <div class="perpage-item" data-perpage="100">100</div>
                                 </div>
                             </div>
                         </div>
@@ -1246,8 +1246,13 @@
                             </thead>
                             <tbody>
                                 @forelse($activityLogs as $index => $log)
-                                <tr>
-                                    <td>{{ $activityLogs->firstItem() + $index }}</td>
+                                <tr data-id="{{ $log->id }}"
+                                    data-role="{{ $log->user->role->name ?? 'user' }}"
+                                    data-status="{{ $log->status }}"
+                                    data-ip="{{ $log->ip_address }}"
+                                    data-browser="{{ $log->browser }}"
+                                    data-search="{{ ($log->user->role->name ?? 'user') . ' ' . $log->ip_address . ' ' . $log->browser . ' ' . $log->os }}">
+                                    <td>{{ $index + 1 }}</td>
                                     <td>
                                         <div class="time-info">
                                             <span class="time-main">{{ $log->created_at->format('H:i:s') }}</span>
@@ -1350,12 +1355,11 @@
 
                     {{-- PAGINATION --}}
                     <div class="pagination-wrapper">
-                        <div class="pagination-info">
-                            Menampilkan <strong>{{ $activityLogs->firstItem() ?? 0 }} - {{ $activityLogs->lastItem() ?? 0 }}</strong>
-                            dari <strong>{{ $activityLogs->total() ?? 0 }}</strong> data
+                        <div class="pagination-info" id="paginationText">
+                            Menampilkan 0 - 0 dari 0 data
                         </div>
 
-                        {{ $activityLogs->appends(request()->query())->links() }}
+                        <ul class="pagination" id="pagination"></ul>
                     </div>
                 </div>
             </div>
@@ -1369,182 +1373,189 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        // ===== SET INITIAL FILTER VALUES =====
-        const selectedRole = $('#selectedRoleValue').val();
-        const selectedStatus = $('#selectedStatusValue').val();
-        const selectedPerPage = $('#selectedPerPageValue').val();
-        const searchValue = $('#searchValue').val();
+        // ===== VARIABLES =====
+        let currentPage = 1;
+        let perPage = 5;
+        let allRows = [];
+        let filteredRows = [];
 
-        // Set selected role text
-        const roleText = $('#filterRoleDropdown .filter-item.active').text().trim();
-        $('#selectedRole').text(roleText || 'Role');
+        // ===== LOAD ALL ROWS =====
+        function loadAllRows() {
+            allRows = [];
+            $('.table tbody tr').each(function() {
+                const $row = $(this);
+                if (!$row.hasClass('no-data-row') && $row.find('td').length > 1) {
+                    allRows.push({
+                        id: $row.data('id'),
+                        role: $row.data('role'),
+                        status: $row.data('status'),
+                        search: $row.data('search'),
+                        element: $row,
+                        index: allRows.length
+                    });
+                }
+            });
+            filteredRows = [...allRows];
+        }
 
-        // Set selected status text
-        const statusText = $('#filterStatusDropdown .filter-item.active').text().trim();
-        $('#selectedStatus').text(statusText || 'Status');
+        // ===== RENDER TABLE =====
+        function renderTable() {
+            const start = (currentPage - 1) * perPage;
+            const end = Math.min(start + perPage, filteredRows.length);
+            const pageRows = filteredRows.slice(start, end);
+
+            // Sembunyikan semua row
+            $('.table tbody tr').hide();
+
+            if (pageRows.length === 0) {
+                if ($('.table tbody .no-data-row').length === 0) {
+                    $('.table tbody').append('<tr class="no-data-row"><td colspan="7" class="text-center py-4"><i class="bi bi-inbox fs-1 d-block mb-2" style="color: var(--text-secondary);"></i><p style="color: var(--text-secondary);">Tidak ada data log ditemukan</p></td></tr>');
+                } else {
+                    $('.table tbody .no-data-row').show();
+                }
+            } else {
+                $('.table tbody .no-data-row').remove();
+
+                pageRows.forEach((row, index) => {
+                    const $row = row.element;
+                    const rowNumber = start + index + 1;
+                    $row.find('td:eq(0)').text(rowNumber);
+                    $row.show();
+                });
+            }
+
+            // Update info text
+            const total = filteredRows.length;
+            const startDisplay = total === 0 ? 0 : start + 1;
+            const endDisplay = Math.min(end, total);
+            $('#paginationText').html(`Menampilkan <strong>${startDisplay} - ${endDisplay}</strong> dari <strong>${total}</strong> data`);
+
+            renderPagination();
+        }
+
+        // ===== RENDER PAGINATION =====
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredRows.length / perPage);
+            let html = '';
+
+            if (totalPages <= 1) {
+                html = `
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                    <li class="page-item active"><span class="page-link">1</span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                `;
+            } else {
+                if (currentPage === 1) {
+                    html += '<li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>';
+                } else {
+                    html += `<li class="page-item"><span class="page-link" onclick="changePage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></span></li>`;
+                }
+
+                const maxVisible = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                if (endPage - startPage + 1 < maxVisible) startPage = Math.max(1, endPage - maxVisible + 1);
+
+                if (startPage > 1) {
+                    html += `<li class="page-item"><span class="page-link" onclick="changePage(1)">1</span></li>`;
+                    if (startPage > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><span class="page-link" onclick="changePage(${i})">${i}</span></li>`;
+                }
+
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                    html += `<li class="page-item"><span class="page-link" onclick="changePage(${totalPages})">${totalPages}</span></li>`;
+                }
+
+                if (currentPage === totalPages) {
+                    html += '<li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>';
+                } else {
+                    html += `<li class="page-item"><span class="page-link" onclick="changePage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></span></li>`;
+                }
+            }
+            $('#pagination').html(html);
+        }
+
+        window.changePage = function(page) {
+            currentPage = page;
+            renderTable();
+        };
 
         // ===== NOTIFICATION SYSTEM =====
         window.showNotification = function(type, message, title = null) {
-            const icons = {
-                success: 'bi-check-circle-fill',
-                error: 'bi-x-circle-fill',
-                warning: 'bi-exclamation-triangle-fill',
-                info: 'bi-info-circle-fill'
-            };
-
-            const titles = {
-                success: 'Berhasil!',
-                error: 'Gagal!',
-                warning: 'Peringatan!',
-                info: 'Informasi'
-            };
-
+            const icons = { success: 'bi-check-circle-fill', error: 'bi-x-circle-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+            const titles = { success: 'Berhasil!', error: 'Gagal!', warning: 'Peringatan!', info: 'Informasi' };
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <div class="notification-icon">
-                    <i class="bi ${icons[type]}"></i>
-                </div>
-                <div class="notification-content">
-                    <div class="notification-title">${title || titles[type]}</div>
-                    <div class="notification-message">${message}</div>
-                </div>
-                <div class="notification-close" onclick="this.parentElement.remove()">
-                    <i class="bi bi-x"></i>
-                </div>
-                <div class="notification-progress"></div>
-            `;
-
+            notification.innerHTML = `<div class="notification-icon"><i class="bi ${icons[type]}"></i></div><div class="notification-content"><div class="notification-title">${title || titles[type]}</div><div class="notification-message">${message}</div></div><div class="notification-close" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></div><div class="notification-progress"></div>`;
             document.getElementById('notificationContainer').appendChild(notification);
-
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.style.animation = 'slideOut 0.3s ease forwards';
-                    setTimeout(() => {
-                        if (notification.parentElement) {
-                            notification.remove();
-                        }
-                    }, 300);
-                }
-            }, 3000);
+            setTimeout(() => { if (notification.parentElement) { notification.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => { if (notification.parentElement) notification.remove(); }, 300); } }, 3000);
         };
 
         // ===== FILTER FUNCTIONS =====
         function applyFilter() {
             const role = $('#filterRoleDropdown .filter-item.active').data('role') || 'all';
             const status = $('#filterStatusDropdown .filter-item.active').data('status') || 'all';
-            const perPage = $('#perpageDropdown .perpage-item.active').data('perpage') || 10;
-            const search = $('.search-input').val();
+            const search = $('.search-input').val().toLowerCase();
 
-            // Build URL with query parameters
-            let url = new URL(window.location.href);
-            url.searchParams.set('role', role);
-            url.searchParams.set('status', status);
-            url.searchParams.set('per_page', perPage);
-            url.searchParams.set('search', search);
-            url.searchParams.set('page', 1); // Reset ke halaman 1
+            filteredRows = allRows.filter(row => {
+                const matchRole = role === 'all' || row.role === role;
+                const matchStatus = status === 'all' || row.status === status;
+                const matchSearch = !search || row.search.toLowerCase().includes(search);
+                return matchRole && matchStatus && matchSearch;
+            });
 
-            window.location.href = url.toString();
+            currentPage = 1;
+            renderTable();
         }
 
-        // Filter Role selection
+        // Event Listeners
         $('#filterRoleDropdown .filter-item').click(function() {
-            const selectedText = $(this).text().trim();
-            $('#selectedRole').text(selectedText);
             $('#filterRoleDropdown .filter-item').removeClass('active');
             $(this).addClass('active');
+            $('#selectedRole').text($(this).text().trim());
             $('#filterRoleDropdown').removeClass('active');
             applyFilter();
         });
 
-        // Filter Status selection
         $('#filterStatusDropdown .filter-item').click(function() {
-            const selectedText = $(this).text().trim();
-            $('#selectedStatus').text(selectedText);
             $('#filterStatusDropdown .filter-item').removeClass('active');
             $(this).addClass('active');
+            $('#selectedStatus').text($(this).text().trim());
             $('#filterStatusDropdown').removeClass('active');
             applyFilter();
         });
 
-        // Perpage selection
         $('#perpageDropdown .perpage-item').click(function() {
-            const perpage = $(this).data('perpage');
-            $('#selectedPerPage').text('Tampil: ' + perpage);
+            perPage = $(this).data('perpage');
+            $('#selectedPerPage').text('Tampil: ' + perPage);
             $('#perpageDropdown .perpage-item').removeClass('active');
             $(this).addClass('active');
             $('#perpageDropdown').removeClass('active');
-            applyFilter();
+            currentPage = 1;
+            renderTable();
         });
 
-        // Search with debounce
-        let searchTimeout;
-        $('.search-input').on('keyup', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                applyFilter();
-            }, 500);
-        });
-
-        // Search on enter key
-        $('.search-input').on('keypress', function(e) {
-            if (e.which === 13) {
-                clearTimeout(searchTimeout);
-                applyFilter();
-            }
-        });
+        $('.search-input').on('keyup', applyFilter);
 
         // Dropdown toggle
-        $('#filterRoleDropdown .filter-btn').click(function(e) {
+        $('.filter-btn, .perpage-btn').click(function(e) {
             e.stopPropagation();
-            $('#filterRoleDropdown').toggleClass('active');
-            $('#filterStatusDropdown').removeClass('active');
-            $('#perpageDropdown').removeClass('active');
+            const $parent = $(this).parent();
+            $('.filter-dropdown, .perpage-dropdown').not($parent).removeClass('active');
+            $parent.toggleClass('active');
         });
 
-        $('#filterStatusDropdown .filter-btn').click(function(e) {
-            e.stopPropagation();
-            $('#filterStatusDropdown').toggleClass('active');
-            $('#filterRoleDropdown').removeClass('active');
-            $('#perpageDropdown').removeClass('active');
+        $(document).click(function() {
+            $('.filter-dropdown, .perpage-dropdown').removeClass('active');
         });
 
-        $('#perpageDropdown .perpage-btn').click(function(e) {
-            e.stopPropagation();
-            $('#perpageDropdown').toggleClass('active');
-            $('#filterRoleDropdown').removeClass('active');
-            $('#filterStatusDropdown').removeClass('active');
-        });
-
-        $(document).click(function(e) {
-            if (!$(e.target).closest('#filterRoleDropdown').length) {
-                $('#filterRoleDropdown').removeClass('active');
-            }
-            if (!$(e.target).closest('#filterStatusDropdown').length) {
-                $('#filterStatusDropdown').removeClass('active');
-            }
-            if (!$(e.target).closest('#perpageDropdown').length) {
-                $('#perpageDropdown').removeClass('active');
-            }
-        });
-
-        // ===== SHOW NOTIFICATIONS FROM SESSION =====
-        @if(session('success'))
-            showNotification('success', '{{ session('success') }}');
-        @endif
-
-        @if(session('error'))
-            showNotification('error', '{{ session('error') }}');
-        @endif
-
-        @if($errors->any())
-            showNotification('error', '{{ $errors->first() }}', 'Validasi Gagal');
-        @endif
-
-        // Loading overlay click to close (demo)
-        $('#loadingOverlay').click(function() {
-            $(this).removeClass('active');
-        });
+        // Initialize
+        loadAllRows();
+        renderTable();
     });
 </script>
 @endpush

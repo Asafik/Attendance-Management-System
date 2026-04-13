@@ -925,11 +925,11 @@
                             <div class="filter-dropdown" id="filterDropdown">
                                 <div class="filter-btn">
                                     <i class="bi bi-sort-numeric-down"></i>
-                                    <span>Tampil <span id="selectedPerPage">10</span></span>
+                                    <span>Tampil <span id="selectedPerPage">5</span></span>
                                     <i class="bi bi-chevron-down"></i>
                                 </div>
                                 <div class="filter-menu">
-                                    <div class="filter-item" data-perpage="5">5 data</div>
+                                    <div class="filter-item {{ 5 == 5 ? 'active' : '' }}" data-perpage="5">5 data</div>
                                     <div class="filter-item" data-perpage="10">10 data</div>
                                     <div class="filter-item" data-perpage="15">15 data</div>
                                     <div class="filter-item" data-perpage="20">20 data</div>
@@ -1248,7 +1248,7 @@
     $(document).ready(function() {
         // ===== VARIABLES =====
         let currentPage = 1;
-        let perPage = 10;
+        let perPage = 5;
         let allRows = [];
         let filteredRows = [];
 

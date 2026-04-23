@@ -313,10 +313,16 @@ label i {
 }
 
 .fc-col-header-cell {
-    background: var(--accent-soft);
+    background: var(--sidebar-hover);
     color: var(--text-primary);
     padding: 12px 0 !important;
     font-weight: 600 !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+body.light-mode .fc-col-header-cell {
+    background: var(--accent-soft);
+    color: var(--accent-color);
 }
 
 .fc-col-header-cell-cushion {
@@ -870,33 +876,31 @@ textarea.form-control {
     font-size: 20px;
 }
 
-/* DARK MODE */
-body.dark-mode .fc-button {
+/* ===== THEME ADAPTATION FOR CALENDAR ===== */
+/* UI Buttons */
+.fc-button {
     background: var(--bg-card) !important;
-    border-color: var(--border-color) !important;
+    border: 1px solid var(--border-color) !important;
     color: var(--text-primary) !important;
 }
 
-body.dark-mode .fc-button:hover {
+.fc-button:hover {
     background: var(--accent-soft) !important;
     border-color: var(--accent-color) !important;
-    color: var(--accent-text) !important;
+    color: var(--accent-color) !important;
 }
 
-body.dark-mode .fc-col-header-cell {
-    background: var(--sidebar-hover);
+/* Modal and Other UI fixes for Light Mode specifically if needed */
+body.light-mode .btn-secondary {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
 }
 
-body.dark-mode .btn-secondary {
-    background: transparent;
-    border-color: var(--border-color);
-    color: var(--text-primary);
-}
-
-body.dark-mode .btn-secondary:hover {
-    background: var(--accent-soft);
-    border-color: var(--accent-color);
-    color: var(--accent-text);
+body.light-mode .btn-secondary:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
 }
 
 /* ===== RESPONSIVE TABLET (768px - 992px) ===== */

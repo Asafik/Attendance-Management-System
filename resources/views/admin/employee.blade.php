@@ -1881,10 +1881,12 @@
                                 <tr>
                                     <th><i class="bi bi-hash me-1"></i>No</th>
                                     <th><i class="bi bi-person me-1"></i>Nama</th>
+                                    <th><i class="bi bi-at me-1"></i>Username</th>
                                     <th><i class="bi bi-credit-card me-1"></i>No Rekening</th>
                                     <th><i class="bi bi-bank me-1"></i>Bank</th>
                                     <th><i class="bi bi-phone me-1"></i>No HP</th>
                                     <th><i class="bi bi-building me-1"></i>Divisi</th>
+                                    <th><i class="bi bi-briefcase me-1"></i>Jabatan</th>
                                     <th><i class="bi bi-calendar-week me-1"></i>Hari Libur</th>
                                     <th><i class="bi bi-check-circle me-1"></i>Status</th>
                                     <th><i class="bi bi-tools me-1"></i>Aksi</th>
@@ -1892,9 +1894,10 @@
                             </thead>
                             <tbody>
                                 @forelse($employees as $index => $employee)
-                                <tr class="employee-row" 
-                                    data-name="{{ strtolower($employee->name) }}" 
-                                    data-division-id="{{ $employee->division_id }}" 
+                                <tr class="employee-row"
+                                    data-name="{{ strtolower($employee->name) }}"
+                                    data-division-id="{{ $employee->division_id }}"
+                                    data-position-id="{{ $employee->position_id }}"
                                     data-status="{{ $employee->status }}">
                                     <td>{{ $index + 1 }}</td>
                                     <td>
@@ -1913,10 +1916,12 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td>{{ $employee->username }}</td>
                                     <td>{{ $employee->account_number ?? '-' }}</td>
                                     <td>{{ $employee->bank->name ?? '-' }}</td>
                                     <td>{{ $employee->phone ?? '-' }}</td>
                                     <td>{{ $employee->division->name ?? '-' }}</td>
+                                    <td>{{ $employee->position->name ?? '-' }}</td>
                                     <td>
                                         @if($employee->regular_off_day)
                                             @if($employee->regular_off_day == 'Tidak Libur')
@@ -2034,6 +2039,24 @@
                     <input type="text" name="name" id="name" class="form-control" placeholder="Masukkan nama lengkap" required>
                 </div>
 
+                {{-- USERNAME --}}
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="bi bi-at"></i>
+                        Username <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="text" name="username" id="username" class="form-control" placeholder="Masukkan username" required>
+                </div>
+
+                {{-- PASSWORD --}}
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="bi bi-lock"></i>
+                        Password <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="password" name="password" id="password" class="form-control" placeholder="Masukkan password" required>
+                </div>
+
                 {{-- DIVISI --}}
                 <div class="form-group">
                     <label class="form-label">
@@ -2044,6 +2067,20 @@
                         <option value="">Pilih Divisi</option>
                         @foreach($divisions as $division)
                         <option value="{{ $division->id }}">{{ $division->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- JABATAN --}}
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="bi bi-briefcase"></i>
+                        Jabatan
+                    </label>
+                    <select name="position_id" id="position_id" class="form-select">
+                        <option value="">Pilih Jabatan</option>
+                        @foreach($positions as $position)
+                        <option value="{{ $position->id }}">{{ $position->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -2337,12 +2374,18 @@
                     .then(response => response.json())
                     .then(employee => {
                         document.getElementById('name').value = employee.name;
+                        document.getElementById('username').value = employee.username;
                         document.getElementById('division_id').value = employee.division_id;
+                        document.getElementById('position_id').value = employee.position_id || '';
                         document.getElementById('status').value = employee.status;
                         document.getElementById('account_number').value = employee.account_number || '';
                         document.getElementById('bank_id').value = employee.bank_id || '';
                         document.getElementById('phone').value = employee.phone || '';
                         document.getElementById('regular_off_day').value = employee.regular_off_day || '';
+
+                        // Password tidak diisi untuk keamanan
+                        document.getElementById('password').value = '';
+                        document.getElementById('password').required = false;
 
                         const preview = document.getElementById('imagePreview');
                         if (employee.photo) {
@@ -2365,6 +2408,7 @@
                 form.action = '{{ route("employees.store") }}';
                 form.reset();
                 document.getElementById('imagePreview').innerHTML = '<i class="bi bi-person"></i>';
+                document.getElementById('password').required = true;
             }
 
             submitBtn.classList.remove('btn-loading');
@@ -2432,7 +2476,7 @@
     function setFilter(type, value, text) {
         currentFilters[type] = value;
         currentPage = 1; // Reset to first page on filter change
-        
+
         // Update UI dropdown text
         if (type === 'division') {
             document.getElementById('selectedDivision').textContent = text;
@@ -2445,27 +2489,27 @@
             $(`#filterStatusDropdown .filter-item[data-value="${value}"]`).addClass('active');
             $('#filterStatusDropdown').removeClass('active');
         }
-        
+
         filterEmployees();
     }
 
     function setPerPage(value) {
         rowsPerPage = parseInt(value);
         currentPage = 1;
-        
+
         // Update UI
         document.getElementById('selectedPerPage').textContent = `Tampil: ${value}`;
         $('#perpageDropdown .perpage-item').removeClass('active');
         $(`#perpageDropdown .perpage-item[data-value="${value}"]`).addClass('active');
         $('#perpageDropdown').removeClass('active');
-        
+
         filterEmployees();
     }
 
     function filterEmployees() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const rows = Array.from(document.querySelectorAll('.employee-row'));
-        
+
         // 1. First, filter all rows based on criteria
         const filteredRows = rows.filter(row => {
             const name = row.getAttribute('data-name');
@@ -2496,7 +2540,7 @@
         // 4. Update No Data message
         const emptySearchRow = document.getElementById('emptySearchRow');
         const noDataRow = document.getElementById('noDataRow');
-        
+
         if (totalVisible === 0) {
             if (noDataRow) {
                 emptySearchRow.style.display = 'none';
@@ -2532,7 +2576,7 @@
         // Page Numbers
         let startPage = Math.max(1, currentPage - 1);
         let endPage = Math.min(totalPages, startPage + 2);
-        
+
         if (endPage === totalPages) {
             startPage = Math.max(1, endPage - 2);
         }

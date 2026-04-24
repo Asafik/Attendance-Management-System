@@ -2,22 +2,35 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+// 1. TAMBAHKAN IMPORT INI
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Employee extends Model
+// 2. GANTI 'Model' MENJADI 'Authenticatable'
+class Employee extends Authenticatable
 {
-    use HasFactory;
+    // 3. TAMBAHKAN HasApiTokens dan Notifiable
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'division_id',
+        'position_id',
         'bank_id',
+        'username',       // ✅ Tambahkan username untuk login
+        'password',       // ✅ Tambahkan password untuk login
         'name',
         'phone',
         'account_number',
         'photo',
         'status',
-        'regular_off_day', // ✅ TAMBAHKAN INI
+        'regular_off_day',
+    ];
+
+    // 4. SEMBUNYIKAN PASSWORD SAAT JADI JSON API
+    protected $hidden = [
+        'password',
     ];
 
     /**
@@ -26,6 +39,14 @@ class Employee extends Model
     public function division()
     {
         return $this->belongsTo(Division::class);
+    }
+
+    /**
+     * Relasi ke Position
+     */
+    public function position()
+    {
+        return $this->belongsTo(Position::class);
     }
 
     /**
@@ -48,20 +69,11 @@ class Employee extends Model
      * ===== HELPER FUNCTION UNTUK LIBUR TETAP =====
      */
 
-    /**
-     * Cek apakah hari ini adalah libur tetap
-     * @param string $dayName (Senin, Selasa, dll)
-     */
     public function isRegularOffDay($dayName)
     {
         return $this->regular_off_day === $dayName;
     }
 
-    /**
-     * Hitung jumlah hari libur tetap dalam 1 bulan
-     * @param int $year
-     * @param int $month
-     */
     public function countRegularOffDaysInMonth($year, $month)
     {
         if (!$this->regular_off_day || $this->regular_off_day === 'Tidak Libur') {
@@ -83,9 +95,6 @@ class Employee extends Model
         return $totalOffDays;
     }
 
-    /**
-     * Dapatkan teks hari libur tetap untuk ditampilkan
-     */
     public function getRegularOffDayTextAttribute()
     {
         if (!$this->regular_off_day) {
@@ -99,10 +108,6 @@ class Employee extends Model
         return 'Libur setiap ' . $this->regular_off_day;
     }
 
-    /**
-     * Helper untuk konversi angka hari ke nama hari Indonesia
-     * 1 = Senin, 2 = Selasa, ..., 7 = Minggu
-     */
     private function getIndonesianDayName($dayNumber)
     {
         $days = [

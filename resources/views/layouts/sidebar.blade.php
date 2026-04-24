@@ -35,6 +35,12 @@
                 </a>
             </div>
             <div class="nav-item">
+                <a href="{{ route('positions.index') }}" class="nav-link {{ request()->routeIs('positions.index') ? 'active' : '' }}">
+                    <i class="menu-icon fa-solid fa-briefcase"></i>
+                    <span class="menu-text">Jabatan</span>
+                </a>
+            </div>
+            <div class="nav-item">
                 <a href="{{ route('banks.index') }}" class="nav-link {{ request()->routeIs('banks.index') ? 'active' : '' }}">
                     <i class="menu-icon fa-solid fa-building-columns"></i>
                     <span class="menu-text">Bank</span>

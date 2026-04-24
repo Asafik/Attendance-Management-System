@@ -21,6 +21,8 @@ use App\Http\Middleware\CheckActiveUser;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\LocationController; // ← TAMBAHKAN INI
 
+use App\Http\Controllers\OfficeLocationController;
+
 /*
 |--------------------------------------------------------------------------
 | Public Routes (Tidak Perlu Login)
@@ -186,6 +188,11 @@ Route::middleware(['auth', CheckActiveUser::class, \App\Http\Middleware\CheckSin
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
 
+// Jalur untuk menampilkan daftar semua lokasi
+Route::get('/office-locations', [OfficeLocationController::class, 'index'])->name('office-locations.index');
+
+// Jalur untuk menampilkan satu lokasi (QR Code) berdasarkan ID
+Route::get('/office-locations/{id}', [OfficeLocationController::class, 'show'])->name('office-locations.show');
     /*
     |--------------------------------------------------------------------------
     | ActivityLog
